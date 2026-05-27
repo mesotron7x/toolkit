@@ -8,8 +8,8 @@ This script installs and configures the following components:
 - Windows OpenSSH Server
 - Google Chrome through winget
 - Scoop
-- Git, Vim, and PowerShell 7 through Scoop
-- OpenSSH default shell set to PowerShell 7
+- Git and Vim through Scoop
+- OpenSSH default shell set to Windows PowerShell 5
 - C:\ProgramData\ssh\administrators_authorized_keys with hardened ACLs
 
 One-line install:
@@ -35,7 +35,7 @@ $FirewallRuleName = "OpenSSH-Server-In-TCP"
 $OpenSSHRegistryPath = "HKLM:\SOFTWARE\OpenSSH"
 $AdminAuthorizedKeysPath = Join-Path $env:ProgramData "ssh\administrators_authorized_keys"
 $ChromeWingetId = "Google.Chrome"
-$ScoopPackageNames = @("git", "vim", "pwsh")
+$ScoopPackageNames = @("git", "vim")
 
 function Write-Step {
     param([Parameter(Mandatory = $true)][string]$Message)
@@ -339,44 +339,35 @@ function Install-DevelopmentTools {
     }
 }
 
-function Get-PwshPath {
-    Update-CurrentProcessPath
+function Get-WindowsPowerShellPath {
+    $candidate = Join-Path $env:SystemRoot "System32\WindowsPowerShell\v1.0\powershell.exe"
 
-    $scoopRoot = Get-ScoopRoot
-    $candidates = @(
-        (Join-Path $env:ProgramFiles "PowerShell\7\pwsh.exe"),
-        (Join-Path $scoopRoot "apps\pwsh\current\pwsh.exe"),
-        (Join-Path $scoopRoot "shims\pwsh.exe")
-    )
-
-    foreach ($candidate in $candidates) {
-        if (Test-Path -LiteralPath $candidate) {
-            return (Resolve-Path -LiteralPath $candidate).Path
-        }
+    if (Test-Path -LiteralPath $candidate) {
+        return (Resolve-Path -LiteralPath $candidate).Path
     }
 
-    $command = Get-Command pwsh.exe -ErrorAction SilentlyContinue | Select-Object -First 1
+    $command = Get-Command powershell.exe -ErrorAction SilentlyContinue | Select-Object -First 1
     if ($null -ne $command) {
         return $command.Source
     }
 
-    throw "PowerShell 7 executable pwsh.exe was not found."
+    throw "Windows PowerShell executable powershell.exe was not found."
 }
 
-function Set-OpenSSHDefaultShellToPwsh {
-    Write-Step "Setting OpenSSH default shell to PowerShell 7"
+function Set-OpenSSHDefaultShellToWindowsPowerShell {
+    Write-Step "Setting OpenSSH default shell to Windows PowerShell 5"
 
-    $pwshPath = Get-PwshPath
+    $powerShellPath = Get-WindowsPowerShellPath
 
     New-Item -Path $OpenSSHRegistryPath -Force | Out-Null
 
     $currentShell = Get-RegistryStringValue -Path $OpenSSHRegistryPath -Name "DefaultShell"
-    if ($currentShell -ne $pwshPath) {
-        New-ItemProperty -Path $OpenSSHRegistryPath -Name "DefaultShell" -Value $pwshPath -PropertyType String -Force | Out-Null
-        Write-Ok "DefaultShell set to $pwshPath."
+    if ($currentShell -ne $powerShellPath) {
+        New-ItemProperty -Path $OpenSSHRegistryPath -Name "DefaultShell" -Value $powerShellPath -PropertyType String -Force | Out-Null
+        Write-Ok "DefaultShell set to $powerShellPath."
     }
     else {
-        Write-Ok "DefaultShell is already set to $pwshPath."
+        Write-Ok "DefaultShell is already set to $powerShellPath."
     }
 
     $currentShellCommandOption = Get-RegistryStringValue -Path $OpenSSHRegistryPath -Name "DefaultShellCommandOption"
@@ -454,7 +445,7 @@ function Show-Summary {
 
     $service = Get-Service -Name sshd -ErrorAction Stop
     $listener = Get-NetTCPConnection -LocalPort 22 -State Listen -ErrorAction SilentlyContinue
-    $pwshPath = Get-PwshPath
+    $windowsPowerShellPath = Get-WindowsPowerShellPath
     $defaultShell = Get-RegistryStringValue -Path $OpenSSHRegistryPath -Name "DefaultShell"
 
     Write-Host ""
@@ -472,7 +463,7 @@ function Show-Summary {
     Write-Host "  Scoop                : $([bool](Get-Command scoop -ErrorAction SilentlyContinue))"
     Write-Host "  Git                  : $([bool](Get-Command git.exe -ErrorAction SilentlyContinue))"
     Write-Host "  Vim                  : $([bool](Get-Command vim.exe -ErrorAction SilentlyContinue))"
-    Write-Host "  PowerShell 7         : $pwshPath"
+    Write-Host "  Windows PowerShell 5 : $windowsPowerShellPath"
     Write-Host ""
     Write-Host "Local SSH test:"
     Write-Host "  ssh localhost"
@@ -495,7 +486,7 @@ try {
     Enable-SSHDFirewallRule
     Install-ChromeWithWinget
     Install-DevelopmentTools
-    Set-OpenSSHDefaultShellToPwsh
+    Set-OpenSSHDefaultShellToWindowsPowerShell
     Ensure-AdminAuthorizedKeysFile
     Show-Summary
 }
