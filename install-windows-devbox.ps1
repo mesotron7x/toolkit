@@ -6,6 +6,7 @@ Bootstraps a Windows development host for SSH access and basic CLI tools.
 This script installs and configures the following components:
 
 - Windows OpenSSH Server
+- Google Chrome through winget
 - Scoop
 - Git, Vim, and PowerShell 7 through Scoop
 - OpenSSH default shell set to PowerShell 7
@@ -20,6 +21,7 @@ The script is idempotent and can be re-run safely.
 [CmdletBinding()]
 param(
     [switch]$SkipFirewall,
+    [switch]$SkipChrome,
     [switch]$SkipScoopTools,
     [switch]$SkipAdminAuthorizedKeys
 )
@@ -32,6 +34,7 @@ $OpenSSHCapabilityName = "OpenSSH.Server~~~~0.0.1.0"
 $FirewallRuleName = "OpenSSH-Server-In-TCP"
 $OpenSSHRegistryPath = "HKLM:\SOFTWARE\OpenSSH"
 $AdminAuthorizedKeysPath = Join-Path $env:ProgramData "ssh\administrators_authorized_keys"
+$ChromeWingetId = "Google.Chrome"
 $ScoopPackageNames = @("git", "vim", "pwsh")
 
 function Write-Step {
@@ -60,6 +63,7 @@ function Restart-Elevated {
 
     $forwardedArgs = @()
     if ($SkipFirewall) { $forwardedArgs += "-SkipFirewall" }
+    if ($SkipChrome) { $forwardedArgs += "-SkipChrome" }
     if ($SkipScoopTools) { $forwardedArgs += "-SkipScoopTools" }
     if ($SkipAdminAuthorizedKeys) { $forwardedArgs += "-SkipAdminAuthorizedKeys" }
 
@@ -189,6 +193,77 @@ function Enable-SSHDFirewallRule {
         -Profile Any | Out-Null
 
     Write-Ok "Created firewall rule for TCP/22."
+}
+
+function Test-ChromeInstalled {
+    $chromePaths = @(
+        (Join-Path $env:ProgramFiles "Google\Chrome\Application\chrome.exe"),
+        (Join-Path ${env:ProgramFiles(x86)} "Google\Chrome\Application\chrome.exe"),
+        (Join-Path $env:LOCALAPPDATA "Google\Chrome\Application\chrome.exe")
+    )
+
+    foreach ($chromePath in $chromePaths) {
+        if (-not [string]::IsNullOrWhiteSpace($chromePath) -and (Test-Path -LiteralPath $chromePath)) {
+            return $true
+        }
+    }
+
+    $uninstallRegistryPaths = @(
+        "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*",
+        "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*",
+        "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*"
+    )
+
+    foreach ($registryPath in $uninstallRegistryPaths) {
+        $matches = Get-ItemProperty -Path $registryPath -ErrorAction SilentlyContinue |
+            Where-Object { $_.DisplayName -eq "Google Chrome" }
+
+        if ($matches) {
+            return $true
+        }
+    }
+
+    return $false
+}
+
+function Install-ChromeWithWinget {
+    if ($SkipChrome) {
+        Write-Step "Skipping Google Chrome installation"
+        return
+    }
+
+    Write-Step "Checking Google Chrome"
+
+    if (Test-ChromeInstalled) {
+        Write-Ok "Google Chrome is already installed."
+        return
+    }
+
+    Update-CurrentProcessPath
+
+    $wingetCommand = Get-Command winget.exe -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($null -eq $wingetCommand) {
+        throw "winget.exe was not found. Install or update App Installer from Microsoft Store, then re-run this script."
+    }
+
+    Write-Step "Installing Google Chrome through winget"
+    & $wingetCommand.Source install `
+        --id $ChromeWingetId `
+        --exact `
+        --source winget `
+        --silent `
+        --accept-package-agreements `
+        --accept-source-agreements
+
+    if ($LASTEXITCODE -ne 0) {
+        throw "winget install --id $ChromeWingetId failed with exit code $LASTEXITCODE."
+    }
+
+    if (-not (Test-ChromeInstalled)) {
+        throw "winget completed, but Google Chrome was not detected after installation."
+    }
+
+    Write-Ok "Google Chrome installed."
 }
 
 function Test-ScoopInstalled {
@@ -393,6 +468,7 @@ function Show-Summary {
     Write-Host "  Admin keys file      : $AdminAuthorizedKeysPath"
     Write-Host ""
     Write-Host "Tools"
+    Write-Host "  Google Chrome        : $([bool](Test-ChromeInstalled))"
     Write-Host "  Scoop                : $([bool](Get-Command scoop -ErrorAction SilentlyContinue))"
     Write-Host "  Git                  : $([bool](Get-Command git.exe -ErrorAction SilentlyContinue))"
     Write-Host "  Vim                  : $([bool](Get-Command vim.exe -ErrorAction SilentlyContinue))"
@@ -417,6 +493,7 @@ try {
     Install-OpenSSHServer
     Enable-SSHDService
     Enable-SSHDFirewallRule
+    Install-ChromeWithWinget
     Install-DevelopmentTools
     Set-OpenSSHDefaultShellToPwsh
     Ensure-AdminAuthorizedKeysFile
@@ -429,7 +506,7 @@ catch {
     Write-Host ""
     Write-Host "Common causes:"
     Write-Host "  - Windows Update or Feature on Demand access is blocked."
-    Write-Host "  - Scoop cannot reach GitHub or its package buckets."
+    Write-Host "  - winget or Scoop cannot reach GitHub, Microsoft Store, or package sources."
     Write-Host "  - A corporate proxy, antivirus, or execution policy blocks remote scripts."
     Write-Host "  - PowerShell was interrupted during installation."
     exit 1
