@@ -216,7 +216,7 @@ function Test-ChromeInstalled {
 
     foreach ($registryPath in $uninstallRegistryPaths) {
         $matches = Get-ItemProperty -Path $registryPath -ErrorAction SilentlyContinue |
-            Where-Object { $_.DisplayName -eq "Google Chrome" }
+            Where-Object { $_.PSObject.Properties['DisplayName'] -and $_.DisplayName -eq "Google Chrome" }
 
         if ($matches) {
             return $true
