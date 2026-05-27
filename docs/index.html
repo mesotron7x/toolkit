@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="A small collection of practical development utilities and setup scripts.">
+  <meta name="description" content="A small Windows development host bootstrap installer.">
   <title>toolkit</title>
   <style>
     :root {
@@ -14,8 +14,8 @@
       --muted: #94a3b8;
       --line: #334155;
       --accent: #38bdf8;
-      --accent-strong: #0ea5e9;
       --code: #020617;
+      --success: #22c55e;
     }
 
     * {
@@ -57,7 +57,7 @@
     }
 
     .lead {
-      max-width: 680px;
+      max-width: 720px;
       margin: 24px 0 0;
       color: var(--muted);
       font-size: clamp(1.05rem, 2vw, 1.25rem);
@@ -70,7 +70,8 @@
       margin-top: 28px;
     }
 
-    a.button {
+    a.button,
+    button.button {
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -80,11 +81,14 @@
       border-radius: 999px;
       color: var(--text);
       text-decoration: none;
+      font: inherit;
       font-weight: 700;
+      cursor: pointer;
       background: rgba(15, 23, 42, 0.62);
     }
 
-    a.button.primary {
+    a.button.primary,
+    button.button.primary {
       border-color: transparent;
       color: #00111f;
       background: var(--accent);
@@ -115,18 +119,39 @@
       color: var(--muted);
     }
 
-    code, pre {
+    code,
+    pre {
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
     }
 
+    .command-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: stretch;
+      margin-top: 16px;
+    }
+
     pre {
-      margin: 16px 0 0;
+      min-width: 0;
+      margin: 0;
       padding: 16px;
       overflow-x: auto;
       border: 1px solid var(--line);
       border-radius: 16px;
       background: var(--code);
       color: #d1d5db;
+    }
+
+    .copy-button {
+      border-radius: 16px;
+      min-width: 96px;
+    }
+
+    .copy-button.copied {
+      border-color: transparent;
+      color: #052e16;
+      background: var(--success);
     }
 
     .tool-title {
@@ -155,29 +180,29 @@
     footer a {
       color: var(--accent);
     }
+
+    @media (max-width: 680px) {
+      .command-row {
+        grid-template-columns: 1fr;
+      }
+
+      .copy-button {
+        width: 100%;
+      }
+    }
   </style>
 </head>
 <body>
   <main>
     <header>
-      <p class="eyebrow">Developer utilities</p>
+      <p class="eyebrow">Windows developer bootstrap</p>
       <h1>toolkit</h1>
-      <p class="lead">A small collection of practical development utilities and setup scripts for workstation setup, local infrastructure maintenance, and routine engineering tasks.</p>
+      <p class="lead">A small Windows setup utility for enabling SSH access and installing basic CLI tools on a development host.</p>
       <div class="actions">
         <a class="button primary" href="https://github.com/mesotron7x/toolkit">View on GitHub</a>
-        <a class="button" href="https://raw.githubusercontent.com/mesotron7x/toolkit/main/install-windows-devbox.ps1">Open devbox installer</a>
+        <a class="button" href="https://raw.githubusercontent.com/mesotron7x/toolkit/main/install-windows-devbox.ps1">Open installer source</a>
       </div>
     </header>
-
-    <section>
-      <h2>Principles</h2>
-      <ul>
-        <li>Small scripts for common setup or maintenance problems.</li>
-        <li>Easy to inspect before running.</li>
-        <li>Usable directly from a terminal.</li>
-        <li>Minimal dependencies unless a tool has a clear reason to require them.</li>
-      </ul>
-    </section>
 
     <section>
       <div class="tool-title">
@@ -185,26 +210,54 @@
         <span class="tag">Windows</span>
       </div>
       <p>Bootstraps a Windows development host for SSH access and basic CLI tooling. It installs OpenSSH Server, Scoop, Git, Vim, and PowerShell 7, sets the OpenSSH default shell to PowerShell 7, and prepares the administrators authorized keys file.</p>
-      <pre><code>irm https://raw.githubusercontent.com/mesotron7x/toolkit/main/install-windows-devbox.ps1 | iex</code></pre>
+      <div class="command-row">
+        <pre><code id="install-command">irm https://raw.githubusercontent.com/mesotron7x/toolkit/main/install-windows-devbox.ps1 | iex</code></pre>
+        <button class="button primary copy-button" type="button" id="copy-command">Copy</button>
+      </div>
     </section>
 
     <section>
-      <div class="tool-title">
-        <h2>install-windows-sshd.ps1</h2>
-        <span class="tag">Windows</span>
-      </div>
-      <p>Installs and enables the built-in Windows OpenSSH Server, starts the <code>sshd</code> service, configures startup behavior, and ensures TCP/22 is allowed through Windows Defender Firewall.</p>
-      <pre><code>irm https://raw.githubusercontent.com/mesotron7x/toolkit/main/install-windows-sshd.ps1 | iex</code></pre>
+      <h2>What it does</h2>
+      <ul>
+        <li>Installs Windows OpenSSH Server.</li>
+        <li>Starts and enables the <code>sshd</code> service.</li>
+        <li>Allows TCP/22 through Windows Defender Firewall.</li>
+        <li>Installs Scoop, Git, Vim, and PowerShell 7.</li>
+        <li>Sets OpenSSH's default shell to PowerShell 7.</li>
+        <li>Creates <code>C:\ProgramData\ssh\administrators_authorized_keys</code> with strict permissions.</li>
+      </ul>
     </section>
 
     <section>
       <h2>Safety note</h2>
-      <p>The <code>irm ... | iex</code> pattern is convenient, but it executes remote code immediately. For a more auditable flow, download the script first, inspect it, and then run it.</p>
+      <p>The <code>irm ... | iex</code> pattern is convenient, but it executes remote code immediately. For a more auditable flow, open the installer source first, review it, and then run it.</p>
     </section>
 
     <footer>
       Maintained in <a href="https://github.com/mesotron7x/toolkit">mesotron7x/toolkit</a>.
     </footer>
   </main>
+
+  <script>
+    const button = document.getElementById('copy-command');
+    const command = document.getElementById('install-command').textContent.trim();
+
+    button.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(command);
+        button.textContent = 'Copied';
+        button.classList.add('copied');
+        window.setTimeout(() => {
+          button.textContent = 'Copy';
+          button.classList.remove('copied');
+        }, 1600);
+      } catch (error) {
+        button.textContent = 'Select text';
+        window.setTimeout(() => {
+          button.textContent = 'Copy';
+        }, 1600);
+      }
+    });
+  </script>
 </body>
 </html>
