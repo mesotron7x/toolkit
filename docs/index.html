@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="A small Windows development host bootstrap installer.">
-  <meta name="build-version" content="chrome-devbox-2026-05-27">
+  <meta name="build-version" content="powershell5-devbox-2026-05-27">
   <title>toolkit</title>
   <style>
     :root {
@@ -210,7 +210,7 @@
         <h2>install-windows-devbox.ps1</h2>
         <span class="tag">Windows</span>
       </div>
-      <p>Bootstraps a Windows development host for SSH access and basic CLI tooling. It installs OpenSSH Server, Google Chrome, Scoop, Git, Vim, and PowerShell 7, sets the OpenSSH default shell to PowerShell 7, and prepares the administrators authorized keys file.</p>
+      <p>Bootstraps a Windows development host for SSH access and basic CLI tooling. It installs OpenSSH Server, Google Chrome, Scoop, Git, and Vim, sets the OpenSSH default shell to the built-in Windows PowerShell 5, and prepares the administrators authorized keys file.</p>
       <div class="command-row">
         <pre><code id="install-command">irm https://raw.githubusercontent.com/mesotron7x/toolkit/main/install-windows-devbox.ps1 | iex</code></pre>
         <button class="button primary copy-button" type="button" id="copy-command">Copy</button>
@@ -224,8 +224,8 @@
         <li>Starts and enables the <code>sshd</code> service.</li>
         <li>Allows TCP/22 through Windows Defender Firewall.</li>
         <li>Installs Google Chrome through winget.</li>
-        <li>Installs Scoop, Git, Vim, and PowerShell 7.</li>
-        <li>Sets OpenSSH's default shell to PowerShell 7.</li>
+        <li>Installs Scoop, Git, and Vim.</li>
+        <li>Sets OpenSSH's default shell to Windows PowerShell 5.</li>
         <li>Creates <code>C:\ProgramData\ssh\administrators_authorized_keys</code> with strict permissions.</li>
       </ul>
     </section>
