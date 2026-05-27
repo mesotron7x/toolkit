@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="A small Windows development host bootstrap installer.">
-  <meta name="build-version" content="devbox-only-2026-05-27">
+  <meta name="build-version" content="chrome-devbox-2026-05-27">
   <title>toolkit</title>
   <style>
     :root {
@@ -198,7 +198,7 @@
     <header>
       <p class="eyebrow">Windows developer bootstrap</p>
       <h1>toolkit</h1>
-      <p class="lead">A small Windows setup utility for enabling SSH access and installing basic CLI tools on a development host.</p>
+      <p class="lead">A small Windows setup utility for enabling SSH access and installing Chrome plus basic CLI tools on a development host.</p>
       <div class="actions">
         <a class="button primary" href="https://github.com/mesotron7x/toolkit">View on GitHub</a>
         <a class="button" href="https://raw.githubusercontent.com/mesotron7x/toolkit/main/install-windows-devbox.ps1">Open installer source</a>
@@ -210,7 +210,7 @@
         <h2>install-windows-devbox.ps1</h2>
         <span class="tag">Windows</span>
       </div>
-      <p>Bootstraps a Windows development host for SSH access and basic CLI tooling. It installs OpenSSH Server, Scoop, Git, Vim, and PowerShell 7, sets the OpenSSH default shell to PowerShell 7, and prepares the administrators authorized keys file.</p>
+      <p>Bootstraps a Windows development host for SSH access and basic CLI tooling. It installs OpenSSH Server, Google Chrome, Scoop, Git, Vim, and PowerShell 7, sets the OpenSSH default shell to PowerShell 7, and prepares the administrators authorized keys file.</p>
       <div class="command-row">
         <pre><code id="install-command">irm https://raw.githubusercontent.com/mesotron7x/toolkit/main/install-windows-devbox.ps1 | iex</code></pre>
         <button class="button primary copy-button" type="button" id="copy-command">Copy</button>
@@ -223,6 +223,7 @@
         <li>Installs Windows OpenSSH Server.</li>
         <li>Starts and enables the <code>sshd</code> service.</li>
         <li>Allows TCP/22 through Windows Defender Firewall.</li>
+        <li>Installs Google Chrome through winget.</li>
         <li>Installs Scoop, Git, Vim, and PowerShell 7.</li>
         <li>Sets OpenSSH's default shell to PowerShell 7.</li>
         <li>Creates <code>C:\ProgramData\ssh\administrators_authorized_keys</code> with strict permissions.</li>
