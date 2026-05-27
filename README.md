@@ -4,7 +4,7 @@ A small collection of practical development utilities and setup scripts.
 
 This repository currently focuses on one Windows bootstrap tool: `install-windows-devbox.ps1`.
 
-It is intended to make a fresh Windows development host easier to access and use from a terminal by installing OpenSSH Server, Google Chrome, Scoop, Git, Vim, and PowerShell 7, then configuring SSH to use PowerShell 7 as the default shell.
+It is intended to make a fresh Windows development host easier to access and use from a terminal by installing OpenSSH Server, Google Chrome, Scoop, Git, and Vim, then configuring SSH to use the built-in Windows PowerShell 5 as the default shell.
 
 ## Install
 
@@ -23,8 +23,8 @@ The script accepts UAC elevation and can be re-run safely.
 - Enables or creates the Windows Defender Firewall rule for TCP/22.
 - Installs Google Chrome through winget.
 - Installs Scoop.
-- Installs Git, Vim, and PowerShell 7 through Scoop.
-- Sets the OpenSSH default shell to PowerShell 7.
+- Installs Git and Vim through Scoop.
+- Sets the OpenSSH default shell to the built-in Windows PowerShell 5.
 - Creates `C:\ProgramData\ssh\administrators_authorized_keys` and applies strict permissions.
 - Relaunches itself with UAC elevation when needed.
 
