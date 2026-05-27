@@ -2,31 +2,11 @@
 
 A small collection of practical development utilities and setup scripts.
 
-This repository is intended to host lightweight tools that make developer workstation setup, local infrastructure maintenance, and routine engineering tasks faster and more repeatable.
+This repository currently focuses on one Windows bootstrap tool: `install-windows-devbox.ps1`.
 
-The scope is intentionally narrow:
+It is intended to make a fresh Windows development host easier to access and use from a terminal by installing OpenSSH Server, Scoop, Git, Vim, and PowerShell 7, then configuring SSH to use PowerShell 7 as the default shell.
 
-- simple scripts that solve common setup or maintenance problems;
-- tools that are easy to inspect before running;
-- commands that can be used directly from a terminal;
-- minimal dependencies unless a tool has a clear reason to require them.
-
-## Available tools
-
-### `install-windows-devbox.ps1`
-
-Bootstraps a Windows development host for SSH access and basic CLI tooling.
-
-It performs the following actions:
-
-- installs the Windows `OpenSSH.Server~~~~0.0.1.0` optional feature;
-- starts the `sshd` service and sets it to start automatically;
-- enables or creates the Windows Defender Firewall rule for TCP/22;
-- installs Scoop;
-- installs Git, Vim, and PowerShell 7 through Scoop;
-- sets the OpenSSH default shell to PowerShell 7;
-- creates `C:\ProgramData\ssh\administrators_authorized_keys` and applies strict permissions;
-- relaunches itself with UAC elevation when needed.
+## Install
 
 Run from PowerShell:
 
@@ -34,36 +14,25 @@ Run from PowerShell:
 irm https://raw.githubusercontent.com/mesotron7x/toolkit/main/install-windows-devbox.ps1 | iex
 ```
 
-Optional flags:
+The script accepts UAC elevation and can be re-run safely.
+
+## What it does
+
+- Installs the Windows `OpenSSH.Server~~~~0.0.1.0` optional feature.
+- Starts the `sshd` service and sets it to start automatically.
+- Enables or creates the Windows Defender Firewall rule for TCP/22.
+- Installs Scoop.
+- Installs Git, Vim, and PowerShell 7 through Scoop.
+- Sets the OpenSSH default shell to PowerShell 7.
+- Creates `C:\ProgramData\ssh\administrators_authorized_keys` and applies strict permissions.
+- Relaunches itself with UAC elevation when needed.
+
+## Optional flags
 
 ```powershell
 & ([scriptblock]::Create((irm https://raw.githubusercontent.com/mesotron7x/toolkit/main/install-windows-devbox.ps1))) -SkipFirewall
 & ([scriptblock]::Create((irm https://raw.githubusercontent.com/mesotron7x/toolkit/main/install-windows-devbox.ps1))) -SkipScoopTools
 & ([scriptblock]::Create((irm https://raw.githubusercontent.com/mesotron7x/toolkit/main/install-windows-devbox.ps1))) -SkipAdminAuthorizedKeys
-```
-
-### `install-windows-sshd.ps1`
-
-Installs and enables the built-in Windows OpenSSH Server.
-
-It performs the following actions:
-
-- installs the Windows `OpenSSH.Server~~~~0.0.1.0` optional feature;
-- starts the `sshd` service;
-- sets `sshd` to start automatically;
-- enables or creates the Windows Defender Firewall rule for TCP/22;
-- relaunches itself with UAC elevation when needed.
-
-Run from PowerShell:
-
-```powershell
-irm https://raw.githubusercontent.com/mesotron7x/toolkit/main/install-windows-sshd.ps1 | iex
-```
-
-To skip firewall configuration:
-
-```powershell
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/mesotron7x/toolkit/main/install-windows-sshd.ps1))) -SkipFirewall
 ```
 
 ## Safety note
