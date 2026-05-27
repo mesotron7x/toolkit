@@ -165,7 +165,7 @@
       <p class="lead">A small collection of practical development utilities and setup scripts for workstation setup, local infrastructure maintenance, and routine engineering tasks.</p>
       <div class="actions">
         <a class="button primary" href="https://github.com/mesotron7x/toolkit">View on GitHub</a>
-        <a class="button" href="https://raw.githubusercontent.com/mesotron7x/toolkit/main/install-windows-sshd.ps1">Open SSHD installer</a>
+        <a class="button" href="https://raw.githubusercontent.com/mesotron7x/toolkit/main/install-windows-devbox.ps1">Open devbox installer</a>
       </div>
     </header>
 
@@ -177,6 +177,15 @@
         <li>Usable directly from a terminal.</li>
         <li>Minimal dependencies unless a tool has a clear reason to require them.</li>
       </ul>
+    </section>
+
+    <section>
+      <div class="tool-title">
+        <h2>install-windows-devbox.ps1</h2>
+        <span class="tag">Windows</span>
+      </div>
+      <p>Bootstraps a Windows development host for SSH access and basic CLI tooling. It installs OpenSSH Server, Scoop, Git, Vim, and PowerShell 7, sets the OpenSSH default shell to PowerShell 7, and prepares the administrators authorized keys file.</p>
+      <pre><code>irm https://raw.githubusercontent.com/mesotron7x/toolkit/main/install-windows-devbox.ps1 | iex</code></pre>
     </section>
 
     <section>
