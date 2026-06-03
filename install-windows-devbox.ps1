@@ -400,6 +400,28 @@ function Install-DevelopmentTools {
     }
 }
 
+function Set-GitConfigDefault {
+    param(
+        [Parameter(Mandatory = $true)][string]$GitPath,
+        [Parameter(Mandatory = $true)][string]$ConfigPath,
+        [Parameter(Mandatory = $true)][string]$Name,
+        [Parameter(Mandatory = $true)][string]$Value
+    )
+
+    $existingValues = & $GitPath config --file $ConfigPath --get-all $Name 2>$null
+    if ($LASTEXITCODE -eq 0 -and $null -ne $existingValues) {
+        Write-Ok "Git config $Name already has a value; leaving it unchanged."
+        return
+    }
+
+    & $GitPath config --file $ConfigPath --add $Name $Value
+    if ($LASTEXITCODE -ne 0) {
+        throw "git config --file $ConfigPath --add $Name failed with exit code $LASTEXITCODE."
+    }
+
+    Write-Ok "Set Git config default $Name=$Value."
+}
+
 function Write-GitConfig {
     $target = Join-Path $env:USERPROFILE ".gitconfig"
     $gitCommand = Get-Command git.exe -ErrorAction SilentlyContinue | Select-Object -First 1
@@ -413,9 +435,9 @@ function Write-GitConfig {
         return
     }
 
-    Write-Step "Configuring Git defaults in $target"
+    Write-Step "Configuring missing Git defaults in $target"
 
-    $settings = [ordered]@{
+    $defaults = [ordered]@{
         "color.diff" = "auto"
         "color.status" = "auto"
         "color.branch" = "auto"
@@ -439,11 +461,11 @@ function Write-GitConfig {
         "merge.ff" = "only"
     }
 
-    foreach ($setting in $settings.GetEnumerator()) {
-        & $gitCommand.Source config --file $target --replace-all $setting.Key $setting.Value
+    foreach ($default in $defaults.GetEnumerator()) {
+        Set-GitConfigDefault -GitPath $gitCommand.Source -ConfigPath $target -Name $default.Key -Value $default.Value
     }
 
-    Write-Ok "Configured Git defaults in $target without removing unrelated settings."
+    Write-Ok "Configured missing Git defaults in $target without changing existing settings."
 }
 
 function Get-WindowsPowerShellPath {
