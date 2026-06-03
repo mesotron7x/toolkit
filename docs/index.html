@@ -210,7 +210,7 @@
         <h2>install-windows-devbox.ps1</h2>
         <span class="tag">Windows</span>
       </div>
-      <p>Bootstraps a Windows development host for SSH access and basic CLI tooling. It installs OpenSSH Server, Google Chrome, Scoop, Git, and Vim, sets the OpenSSH default shell to the built-in Windows PowerShell 5, and prepares the administrators authorized keys file.</p>
+      <p>Bootstraps a Windows development host for SSH access and basic CLI tooling. It installs OpenSSH Server, Google Chrome, Scoop, Git, and Vim, sets the OpenSSH default shell to the built-in Windows PowerShell 5, and prepares the administrators authorized keys file. If launched from PowerShell 7 (<code>pwsh</code>), it relaunches itself in Windows PowerShell 5.1 before installing Windows optional features such as OpenSSH Server.</p>
       <div class="command-row">
         <pre><code id="install-command">irm https://raw.githubusercontent.com/mesotron7x/toolkit/main/install-windows-devbox.ps1 | iex</code></pre>
         <button class="button primary copy-button" type="button" id="copy-command">Copy</button>
@@ -221,6 +221,7 @@
       <h2>What it does</h2>
       <ul>
         <li>Starts installing Windows OpenSSH Server in the background while Chrome and Scoop tools install.</li>
+        <li>Relaunches itself in Windows PowerShell 5.1 when needed so OpenSSH optional-feature commands run through the Windows PowerShell DISM cmdlets.</li>
         <li>Starts and enables the <code>sshd</code> service.</li>
         <li>Allows TCP/22 through Windows Defender Firewall.</li>
         <li>Installs Google Chrome through winget.</li>

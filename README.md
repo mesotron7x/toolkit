@@ -17,11 +17,12 @@ Run from PowerShell:
 irm https://raw.githubusercontent.com/mesotron7x/toolkit/main/install-windows-devbox.ps1 | iex
 ```
 
-The script accepts UAC elevation and can be re-run safely.
+The script accepts UAC elevation and can be re-run safely. If it is launched from PowerShell 7 (`pwsh`), it relaunches itself in the built-in Windows PowerShell 5.1 before installing Windows optional features such as OpenSSH Server.
 
 ### What it does
 
 - Starts installing the Windows `OpenSSH.Server~~~~0.0.1.0` optional feature in the background while Chrome and Scoop tools install.
+- Relaunches itself in Windows PowerShell 5.1 when needed so OpenSSH optional-feature commands run through the Windows PowerShell DISM cmdlets.
 - Starts the `sshd` service and sets it to start automatically.
 - Enables or creates the Windows Defender Firewall rule for TCP/22.
 - Installs Google Chrome through winget.
