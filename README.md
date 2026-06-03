@@ -21,7 +21,7 @@ The script accepts UAC elevation and can be re-run safely.
 
 ### What it does
 
-- Installs the Windows `OpenSSH.Server~~~~0.0.1.0` optional feature.
+- Starts installing the Windows `OpenSSH.Server~~~~0.0.1.0` optional feature in the background while Chrome and Scoop tools install.
 - Starts the `sshd` service and sets it to start automatically.
 - Enables or creates the Windows Defender Firewall rule for TCP/22.
 - Installs Google Chrome through winget.

@@ -129,9 +129,11 @@ function Get-RegistryStringValue {
 }
 
 function Install-OpenSSHServer {
+    param([Parameter(Mandatory = $true)][string]$CapabilityName)
+
     Write-Step "Checking Windows OpenSSH Server optional feature"
 
-    $capability = Get-WindowsCapability -Online -Name $OpenSSHCapabilityName
+    $capability = Get-WindowsCapability -Online -Name $CapabilityName
 
     if ($capability.State -eq "Installed") {
         Write-Ok "OpenSSH Server is already installed."
@@ -139,14 +141,73 @@ function Install-OpenSSHServer {
     }
 
     Write-Step "Installing OpenSSH Server"
-    Add-WindowsCapability -Online -Name $OpenSSHCapabilityName | Out-Null
+    Add-WindowsCapability -Online -Name $CapabilityName | Out-Null
 
-    $capability = Get-WindowsCapability -Online -Name $OpenSSHCapabilityName
+    $capability = Get-WindowsCapability -Online -Name $CapabilityName
     if ($capability.State -ne "Installed") {
         throw "OpenSSH Server installation did not complete. Current state: $($capability.State)"
     }
 
     Write-Ok "OpenSSH Server installed."
+}
+
+function Start-OpenSSHServerInstallJob {
+    Write-Step "Starting OpenSSH Server installation in the background"
+
+    $writeStepFunction = ${function:Write-Step}.ToString()
+    $writeOkFunction = ${function:Write-Ok}.ToString()
+    $installOpenSSHServerFunction = ${function:Install-OpenSSHServer}.ToString()
+
+    Start-Job -Name "OpenSSHServerInstall" -ArgumentList @(
+        $OpenSSHCapabilityName,
+        $writeStepFunction,
+        $writeOkFunction,
+        $installOpenSSHServerFunction
+    ) -ScriptBlock {
+        param(
+            [Parameter(Mandatory = $true)][string]$CapabilityName,
+            [Parameter(Mandatory = $true)][string]$WriteStepFunction,
+            [Parameter(Mandatory = $true)][string]$WriteOkFunction,
+            [Parameter(Mandatory = $true)][string]$InstallOpenSSHServerFunction
+        )
+
+        Set-StrictMode -Version Latest
+        $ErrorActionPreference = "Stop"
+
+        Set-Item -Path function:Write-Step -Value ([scriptblock]::Create($WriteStepFunction))
+        Set-Item -Path function:Write-Ok -Value ([scriptblock]::Create($WriteOkFunction))
+        Set-Item -Path function:Install-OpenSSHServer -Value ([scriptblock]::Create($InstallOpenSSHServerFunction))
+
+        Install-OpenSSHServer -CapabilityName $CapabilityName
+    }
+}
+
+function Wait-OpenSSHServerInstallJob {
+    param([Parameter(Mandatory = $true)][System.Management.Automation.Job]$Job)
+
+    Write-Step "Waiting for OpenSSH Server installation to finish"
+
+    Wait-Job -Job $Job | Out-Null
+    Receive-Job -Job $Job -ErrorAction Stop
+
+    if ($Job.State -ne "Completed") {
+        throw "OpenSSH Server installation job ended with state: $($Job.State)."
+    }
+
+    Remove-Job -Job $Job
+    Write-Ok "OpenSSH Server installation task finished."
+}
+
+function Stop-OpenSSHServerInstallJob {
+    param([Parameter(Mandatory = $true)][System.Management.Automation.Job]$Job)
+
+    if ($Job.State -eq "Running") {
+        Write-Step "Stopping OpenSSH Server installation background job"
+        Stop-Job -Job $Job -ErrorAction SilentlyContinue
+    }
+
+    Receive-Job -Job $Job -ErrorAction SilentlyContinue | Out-Null
+    Remove-Job -Job $Job -Force -ErrorAction SilentlyContinue
 }
 
 function Enable-SSHDService {
@@ -472,6 +533,8 @@ function Show-Summary {
     Write-Host "  ssh <windows-username>@<windows-ip>"
 }
 
+$openSshInstallJob = $null
+
 try {
     if (-not (Test-IsWindows)) {
         throw "This installer only supports Windows."
@@ -481,16 +544,26 @@ try {
         Restart-Elevated
     }
 
-    Install-OpenSSHServer
-    Enable-SSHDService
-    Enable-SSHDFirewallRule
+    $openSshInstallJob = Start-OpenSSHServerInstallJob
+
     Install-ChromeWithWinget
     Install-DevelopmentTools
+
+    Wait-OpenSSHServerInstallJob -Job $openSshInstallJob
+    $openSshInstallJob = $null
+
+    Enable-SSHDService
+    Enable-SSHDFirewallRule
     Set-OpenSSHDefaultShellToWindowsPowerShell
     Ensure-AdminAuthorizedKeysFile
     Show-Summary
 }
 catch {
+    if ($null -ne $openSshInstallJob) {
+        Stop-OpenSSHServerInstallJob -Job $openSshInstallJob
+        $openSshInstallJob = $null
+    }
+
     Write-Host ""
     Write-Host "Bootstrap failed:" -ForegroundColor Red
     Write-Host "  $($_.Exception.Message)" -ForegroundColor Red
