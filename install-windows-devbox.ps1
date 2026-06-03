@@ -402,47 +402,48 @@ function Install-DevelopmentTools {
 
 function Write-GitConfig {
     $target = Join-Path $env:USERPROFILE ".gitconfig"
+    $gitCommand = Get-Command git.exe -ErrorAction SilentlyContinue | Select-Object -First 1
 
-    Write-Step "Writing Git configuration to $target"
+    if ($null -eq $gitCommand) {
+        $gitCommand = Get-Command git -ErrorAction SilentlyContinue | Select-Object -First 1
+    }
 
-    $content = @'
-[color]
-        diff = auto
-        status = auto
-        branch = auto
-        interactive = auto
-        ui = true
-        pager = true
-[pager]
-        branch = false
-[user]
-        email = 284197357+mesotron7x@users.noreply.github.com
-        name = Mesotron7x
-[credential]
-        helper = store
-[core]
-        editor = /usr/bin/vim
-        quotepath = false
-[init]
-        defaultBranch = main
-[pager]
-        branch = false
-        tag = false
-        log = false
-        show = false
-        diff = false
-        blame = false
-        grep = false
-[pull]
-        ff = only
-[merge]
-        ff = only
-'@
+    if ($null -eq $gitCommand) {
+        Write-Step "Skipping Git configuration because Git was not found"
+        return
+    }
 
-    $utf8NoBom = New-Object System.Text.UTF8Encoding $false
-    [System.IO.File]::WriteAllText($target, $content, $utf8NoBom)
+    Write-Step "Configuring Git defaults in $target"
 
-    Write-Ok "Wrote Git configuration to $target."
+    $settings = [ordered]@{
+        "color.diff" = "auto"
+        "color.status" = "auto"
+        "color.branch" = "auto"
+        "color.interactive" = "auto"
+        "color.ui" = "true"
+        "color.pager" = "true"
+        "pager.branch" = "false"
+        "pager.tag" = "false"
+        "pager.log" = "false"
+        "pager.show" = "false"
+        "pager.diff" = "false"
+        "pager.blame" = "false"
+        "pager.grep" = "false"
+        "user.email" = "284197357+mesotron7x@users.noreply.github.com"
+        "user.name" = "Mesotron7x"
+        "credential.helper" = "store"
+        "core.editor" = "/usr/bin/vim"
+        "core.quotepath" = "false"
+        "init.defaultBranch" = "main"
+        "pull.ff" = "only"
+        "merge.ff" = "only"
+    }
+
+    foreach ($setting in $settings.GetEnumerator()) {
+        & $gitCommand.Source config --file $target --replace-all $setting.Key $setting.Value
+    }
+
+    Write-Ok "Configured Git defaults in $target without removing unrelated settings."
 }
 
 function Get-WindowsPowerShellPath {
