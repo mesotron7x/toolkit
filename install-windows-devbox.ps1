@@ -57,20 +57,58 @@ function Test-IsAdministrator {
     return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 }
 
-function Restart-Elevated {
-    Write-Step "Administrator privileges are required"
-    Write-Host "A UAC prompt will appear. The installer will continue in an elevated PowerShell window."
-
+function Get-InstallerArgumentList {
     $forwardedArgs = @()
     if ($SkipFirewall) { $forwardedArgs += "-SkipFirewall" }
     if ($SkipChrome) { $forwardedArgs += "-SkipChrome" }
     if ($SkipScoopTools) { $forwardedArgs += "-SkipScoopTools" }
     if ($SkipAdminAuthorizedKeys) { $forwardedArgs += "-SkipAdminAuthorizedKeys" }
 
-    $argText = $forwardedArgs -join " "
+    return $forwardedArgs
+}
+
+function Test-IsWindowsPowerShell5 {
+    if ($PSVersionTable.PSVersion.Major -ne 5) {
+        return $false
+    }
+
+    $edition = "Desktop"
+    if ($PSVersionTable.ContainsKey("PSEdition")) {
+        $edition = $PSVersionTable.PSEdition
+    }
+
+    return $edition -eq "Desktop"
+}
+
+function Restart-WindowsPowerShell5IfNeeded {
+    if (Test-IsWindowsPowerShell5) {
+        return
+    }
+
+    Write-Step "Switching to Windows PowerShell 5.1 for Windows optional features"
+    Write-Host "OpenSSH Server is a Windows optional feature, and its DISM cmdlets are more reliable in Windows PowerShell 5.1."
+
+    $powerShellPath = Get-WindowsPowerShellPath
+    $argText = (Get-InstallerArgumentList) -join " "
     $command = "Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force; & ([scriptblock]::Create((irm '$InstallerUrl'))) $argText"
 
-    Start-Process -FilePath "powershell.exe" -Verb RunAs -ArgumentList @(
+    Start-Process -FilePath $powerShellPath -ArgumentList @(
+        "-NoProfile",
+        "-ExecutionPolicy", "Bypass",
+        "-Command", $command
+    ) | Out-Null
+
+    exit 0
+}
+
+function Restart-Elevated {
+    Write-Step "Administrator privileges are required"
+    Write-Host "A UAC prompt will appear. The installer will continue in an elevated PowerShell window."
+
+    $argText = (Get-InstallerArgumentList) -join " "
+    $command = "Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force; & ([scriptblock]::Create((irm '$InstallerUrl'))) $argText"
+
+    Start-Process -FilePath (Get-WindowsPowerShellPath) -Verb RunAs -ArgumentList @(
         "-NoProfile",
         "-ExecutionPolicy", "Bypass",
         "-Command", $command
@@ -131,9 +169,28 @@ function Get-RegistryStringValue {
 function Install-OpenSSHServer {
     param([Parameter(Mandatory = $true)][string]$CapabilityName)
 
+    function New-OpenSSHCapabilityFailureMessage {
+        param(
+            [Parameter(Mandatory = $true)][string]$Action,
+            [Parameter(Mandatory = $true)][System.Exception]$Exception
+        )
+
+        $message = "Windows optional feature cmdlets failed while checking or installing OpenSSH Server ($Action): $($Exception.Message)"
+        if ($Exception.Message -like "*Class not registered*" -or $Exception.GetType().FullName -like "*COMException*") {
+            $message = "$message This can happen when Get-WindowsCapability/Add-WindowsCapability run outside Windows PowerShell 5.1. Re-run from Windows PowerShell 5.1 or let this installer relaunch itself."
+        }
+
+        return $message
+    }
+
     Write-Step "Checking Windows OpenSSH Server optional feature"
 
-    $capability = Get-WindowsCapability -Online -Name $CapabilityName
+    try {
+        $capability = Get-WindowsCapability -Online -Name $CapabilityName
+    }
+    catch {
+        throw (New-OpenSSHCapabilityFailureMessage -Action "checking" -Exception $_.Exception)
+    }
 
     if ($capability.State -eq "Installed") {
         Write-Ok "OpenSSH Server is already installed."
@@ -141,9 +198,20 @@ function Install-OpenSSHServer {
     }
 
     Write-Step "Installing OpenSSH Server"
-    Add-WindowsCapability -Online -Name $CapabilityName | Out-Null
+    try {
+        Add-WindowsCapability -Online -Name $CapabilityName | Out-Null
+    }
+    catch {
+        throw (New-OpenSSHCapabilityFailureMessage -Action "installing" -Exception $_.Exception)
+    }
 
-    $capability = Get-WindowsCapability -Online -Name $CapabilityName
+    try {
+        $capability = Get-WindowsCapability -Online -Name $CapabilityName
+    }
+    catch {
+        throw (New-OpenSSHCapabilityFailureMessage -Action "verifying" -Exception $_.Exception)
+    }
+
     if ($capability.State -ne "Installed") {
         throw "OpenSSH Server installation did not complete. Current state: $($capability.State)"
     }
@@ -608,6 +676,8 @@ try {
     if (-not (Test-IsWindows)) {
         throw "This installer only supports Windows."
     }
+
+    Restart-WindowsPowerShell5IfNeeded
 
     if (-not (Test-IsAdministrator)) {
         Restart-Elevated
