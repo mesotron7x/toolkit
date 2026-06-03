@@ -9,6 +9,7 @@ This script installs and configures the following components:
 - Google Chrome through winget
 - Scoop
 - Git and Vim through Scoop
+- Git configured globally to preserve LF line endings
 - OpenSSH default shell set to Windows PowerShell 5
 - C:\ProgramData\ssh\administrators_authorized_keys with hardened ACLs
 
@@ -422,6 +423,21 @@ function Set-GitConfigDefault {
     Write-Ok "Set Git config default $Name=$Value."
 }
 
+function Set-GitConfigGlobalValue {
+    param(
+        [Parameter(Mandatory = $true)][string]$GitPath,
+        [Parameter(Mandatory = $true)][string]$Name,
+        [Parameter(Mandatory = $true)][string]$Value
+    )
+
+    & $GitPath config --global $Name $Value
+    if ($LASTEXITCODE -ne 0) {
+        throw "git config --global $Name $Value failed with exit code $LASTEXITCODE."
+    }
+
+    Write-Ok "Set global Git config $Name=$Value."
+}
+
 function Write-GitConfig {
     $target = Join-Path $env:USERPROFILE ".gitconfig"
     $gitCommand = Get-Command git.exe -ErrorAction SilentlyContinue | Select-Object -First 1
@@ -465,7 +481,11 @@ function Write-GitConfig {
         Set-GitConfigDefault -GitPath $gitCommand.Source -ConfigPath $target -Name $default.Key -Value $default.Value
     }
 
+    Set-GitConfigGlobalValue -GitPath $gitCommand.Source -Name "core.autocrlf" -Value "false"
+    Set-GitConfigGlobalValue -GitPath $gitCommand.Source -Name "core.eol" -Value "lf"
+
     Write-Ok "Configured missing Git defaults in $target without changing existing settings."
+    Write-Ok "Forced Git line ending settings with core.autocrlf=false and core.eol=lf."
 }
 
 function Get-WindowsPowerShellPath {
