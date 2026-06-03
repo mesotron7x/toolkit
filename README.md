@@ -27,6 +27,7 @@ The script accepts UAC elevation and can be re-run safely.
 - Installs Google Chrome through winget.
 - Installs Scoop.
 - Installs Git and Vim through Scoop.
+- Writes `%USERPROFILE%\.gitconfig` with Mesotron7x identity, color output, Vim as the editor, disabled Git pagers, `main` as the default initial branch, and fast-forward-only pulls/merges.
 - Sets the OpenSSH default shell to the built-in Windows PowerShell 5.
 - Creates `C:\ProgramData\ssh\administrators_authorized_keys` and applies strict permissions.
 - Relaunches itself with UAC elevation when needed.

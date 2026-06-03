@@ -400,6 +400,51 @@ function Install-DevelopmentTools {
     }
 }
 
+function Write-GitConfig {
+    $target = Join-Path $env:USERPROFILE ".gitconfig"
+
+    Write-Step "Writing Git configuration to $target"
+
+    $content = @'
+[color]
+        diff = auto
+        status = auto
+        branch = auto
+        interactive = auto
+        ui = true
+        pager = true
+[pager]
+        branch = false
+[user]
+        email = 284197357+mesotron7x@users.noreply.github.com
+        name = Mesotron7x
+[credential]
+        helper = store
+[core]
+        editor = /usr/bin/vim
+        quotepath = false
+[init]
+        defaultBranch = main
+[pager]
+        branch = false
+        tag = false
+        log = false
+        show = false
+        diff = false
+        blame = false
+        grep = false
+[pull]
+        ff = only
+[merge]
+        ff = only
+'@
+
+    $utf8NoBom = New-Object System.Text.UTF8Encoding $false
+    [System.IO.File]::WriteAllText($target, $content, $utf8NoBom)
+
+    Write-Ok "Wrote Git configuration to $target."
+}
+
 function Get-WindowsPowerShellPath {
     $candidate = Join-Path $env:SystemRoot "System32\WindowsPowerShell\v1.0\powershell.exe"
 
@@ -523,6 +568,7 @@ function Show-Summary {
     Write-Host "  Google Chrome        : $([bool](Test-ChromeInstalled))"
     Write-Host "  Scoop                : $([bool](Get-Command scoop -ErrorAction SilentlyContinue))"
     Write-Host "  Git                  : $([bool](Get-Command git.exe -ErrorAction SilentlyContinue))"
+    Write-Host "  Git config           : $(Join-Path $env:USERPROFILE '.gitconfig')"
     Write-Host "  Vim                  : $([bool](Get-Command vim.exe -ErrorAction SilentlyContinue))"
     Write-Host "  Windows PowerShell 5 : $windowsPowerShellPath"
     Write-Host ""
@@ -548,6 +594,7 @@ try {
 
     Install-ChromeWithWinget
     Install-DevelopmentTools
+    Write-GitConfig
 
     Wait-OpenSSHServerInstallJob -Job $openSshInstallJob
     $openSshInstallJob = $null
