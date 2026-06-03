@@ -430,9 +430,9 @@ function Set-GitConfigGlobalValue {
         [Parameter(Mandatory = $true)][string]$Value
     )
 
-    & $GitPath config --global $Name $Value
+    & $GitPath config --global --replace-all $Name $Value
     if ($LASTEXITCODE -ne 0) {
-        throw "git config --global $Name $Value failed with exit code $LASTEXITCODE."
+        throw "git config --global --replace-all $Name $Value failed with exit code $LASTEXITCODE."
     }
 
     Write-Ok "Set global Git config $Name=$Value."
